@@ -8,14 +8,14 @@ import time
 import os
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, PROJECT_ROOT)
 
-try:
-    with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config', 'sources.json'), 'r') as f:
-        SOURCES = json.load(f)
-except:
-    with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config', 'sources.json'), 'r') as f:
-        SOURCES = json.load(f)
+
+def load_config():
+    config_path = os.path.join(PROJECT_ROOT, 'config', 'sources.json')
+    with open(config_path, 'r', encoding='utf-8') as f:
+        return json.load(f)
 
 
 def fetch_reddit_subreddit(subreddit, max_posts=50):
@@ -49,10 +49,8 @@ def extract_prompts_from_reddit(data, keywords):
         author = post_data.get('author', '')
         created_utc = post_data.get('created_utc', 0)
 
-        # 把标题+正文拼起来搜索关键词
         full_text = f"{title} {selftext}".lower()
 
-        # 检查是否含关键词
         matched_keyword = None
         for kw in keywords:
             if kw.lower() in full_text:
@@ -62,22 +60,15 @@ def extract_prompts_from_reddit(data, keywords):
         if not matched_keyword:
             continue
 
-        # 尝试从 selftext 中提取 prompt 文本
-        # Reddit 帖子格式：有的标题是 prompt，有的正文里包含 prompt
         prompt_text = ''
-
         if selftext:
-            # 先尝试找被标记为 Prompt 的内容
             lines = selftext.split('\n')
             for i, line in enumerate(lines):
-                if 'prompt' in line.lower():
-                    # 取下一行作为 prompt
-                    if i + 1 < len(lines):
-                        candidate = lines[i + 1].strip()
-                        if len(candidate) > 20:
-                            prompt_text = candidate
-                            break
-            # 如果没找到，尝试直接取第一段较长的非空文本
+                if 'prompt' in line.lower() and i + 1 < len(lines):
+                    candidate = lines[i + 1].strip()
+                    if len(candidate) > 20:
+                        prompt_text = candidate
+                        break
             if not prompt_text:
                 for line in lines:
                     line = line.strip()
@@ -86,10 +77,8 @@ def extract_prompts_from_reddit(data, keywords):
                         break
 
         if not prompt_text:
-            # 用标题作为 prompt（标题党情况下）
             prompt_text = title
 
-        # 推断分类
         category = infer_category(title, selftext, prompt_text)
 
         prompts.append({
@@ -132,11 +121,12 @@ def infer_category(title, description, prompt_text):
 def crawl_reddit():
     """主采集函数"""
     results = []
-    reddit_config = SOURCES.get('reddit', {})
+    sources = load_config()
+    reddit_config = sources.get('reddit', {})
 
     if not reddit_config.get('enabled', True):
         print("[reddit] Disabled in config")
-        return []
+        return results
 
     subreddits = reddit_config.get('subreddits', ['ChatGPT'])
     keywords = reddit_config.get('keywords', ['GPT Image'])
@@ -149,15 +139,13 @@ def crawl_reddit():
             prompts = extract_prompts_from_reddit(data, keywords)
             print(f"[reddit] Found {len(prompts)} GPT Image prompts from r/{sub}")
             results.extend(prompts)
-
-        # Reddit API 限速：每秒约 60 请求，但不要过于频繁
         time.sleep(2)
 
     return results
 
 
 if __name__ == '__main__':
-    output_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'raw_reddit.json')
+    output_path = os.path.join(PROJECT_ROOT, 'data', 'raw_reddit.json')
     prompts = crawl_reddit()
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
