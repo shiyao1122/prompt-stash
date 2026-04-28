@@ -1,0 +1,11 @@
+# Cloudflare Pages 部署配置参考
+# 1. 在 Cloudflare Dashboard → Pages → 创建项目
+# 2. 连接到 GitHub 仓库 shiyao1122/prompt-stash
+# 3. 设置构建命令留空（纯静态推送）
+# 4. 设置输出目录为 /
+# 5. 在 GitHub repo Settings → Secrets 添加:
+#    - CLOUDFLARE_API_TOKEN: 你的 Cloudflare API Token
+#    - CLOUDFLARE_ACCOUNT_ID: 你的 Cloudflare Account ID
+
+# 或者直接使用 Cloudflare Dashboard 的 GitHub 集成，
+# 在 push 到 main 时自动触发部署

@@ -1,0 +1,41 @@
+name: Deploy to Cloudflare Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run crawlers
+        run: |
+          python scripts/crawlers/youmind_crawler.py
+          python scripts/crawlers/reddit_crawler.py
+
+      - name: Dedupe & generate site
+        run: |
+          python scripts/dedupe/dedupe.py
+          python scripts/publisher/generate_site.py
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          api-token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          account-id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          project-name: prompt-stash
+          directory: outputs/site
+          git-domain: github.com
+          branch: main
