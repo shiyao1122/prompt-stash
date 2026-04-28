@@ -1,0 +1,3 @@
+# Environment (contains secrets — never push this)
+.env
+.env.local

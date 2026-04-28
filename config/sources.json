@@ -1,0 +1,32 @@
+{
+  "youmind": {
+    "enabled": true,
+    "urls": [
+      "https://youmind.com/gpt-image-1-5-prompts"
+    ],
+    "selectors": {
+      "prompt_card": "article, .prompt-item, [class*='prompt']",
+      "title": "h3, .title, [class*='title']",
+      "prompt_text": ".prompt-text, pre, code, [class*='prompt']",
+      "author": "[class*='author'], [class*='by']",
+      "description": "p, [class*='desc']"
+    },
+    "rate_limit_seconds": 5
+  },
+  "reddit": {
+    "enabled": true,
+    "subreddits": [
+      "ChatGPT",
+      "GPTImage",
+      "artificial"
+    ],
+    "keywords": [
+      "GPT Image",
+      "GPTImage",
+      "ChatGPT Image",
+      "gpt-image"
+    ],
+    "max_per_subreddit": 50,
+    "rate_limit_requests_per_minute": 60
+  }
+}

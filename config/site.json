@@ -1,0 +1,25 @@
+{
+  "name": "PromptStash",
+  "tagline": "A curated collection of GPT Image prompts",
+  "description": "Discover and copy high-quality GPT Image prompts for avatar, social media, infographics, thumbnails, and more. Updated automatically.",
+  "base_url": "https://promptstash.com",
+  "og_image": "/og-image.png",
+  "author": "PromptStash",
+  "model": "gpt-image",
+  "categories": [
+    { "name": "All", "slug": "all", "display_name": "All Prompts" },
+    { "name": "Avatar", "slug": "avatar", "display_name": "Profile & Avatar" },
+    { "name": "SocialMedia", "slug": "social-media", "display_name": "Social Media Post" },
+    { "name": "Infographic", "slug": "infographic", "display_name": "Infographic & Edu Visual" },
+    { "name": "Thumbnail", "slug": "youtube-thumbnail", "display_name": "YouTube Thumbnail" },
+    { "name": "Comic", "slug": "comic-storyboard", "display_name": "Comic & Storyboard" },
+    { "name": "Poster", "slug": "poster-flyer", "display_name": "Poster & Flyer" },
+    { "name": "AppDesign", "slug": "app-web-design", "display_name": "App & Web Design" }
+  ],
+  "try_it_now_url": "",
+  "footer_links": [
+    { "text": "About", "url": "/about" },
+    { "text": "Contact", "url": "/contact" },
+    { "text": "Privacy", "url": "/privacy" }
+  ]
+}
