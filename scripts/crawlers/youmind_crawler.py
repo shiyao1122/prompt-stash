@@ -1,22 +1,21 @@
 """
 YouMind 爬虫 - 抓取 youmind.com 的 GPT Image prompts
+从 Next.js __next_f.push 序列化的 React 状态中提取 X.com 推文内容
 Python 3.7 兼容
 """
 import requests
-from bs4 import BeautifulSoup
+import re
 import json
 import time
 import os
 import sys
-
+import hashlib
 import subprocess
 
 # 项目根目录（scripts/crawlers/ → project root）
-# 往上走 3 层：crawlers/ → crawlers/../ → scripts/../ → root
 _script_abspath = os.path.abspath(__file__) if '__file__' in globals() else os.path.abspath('scripts/crawlers')
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(_script_abspath)))
 
-# 保险机制：用 git rev-parse 确保拿到真实 repo 根目录
 try:
     _git_root = subprocess.check_output(
         ['git', 'rev-parse', '--show-toplevel'],
@@ -31,18 +30,10 @@ except Exception:
 sys.path.insert(0, PROJECT_ROOT)
 
 
-def load_config():
-    """加载配置文件"""
-    config_path = os.path.join(PROJECT_ROOT, 'config', 'sources.json')
-    with open(config_path, 'r', encoding='utf-8') as f:
-        return json.load(f)
-
-
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 
 
 def fetch_page(url, timeout=15):
-    """抓取单个页面"""
     headers = {'User-Agent': USER_AGENT}
     try:
         resp = requests.get(url, headers=headers, timeout=timeout)
@@ -53,64 +44,8 @@ def fetch_page(url, timeout=15):
         return None
 
 
-def parse_youmind_prompts(html_content, source_url):
-    """解析 youmind 页面，提取 prompt 列表"""
-    if not html_content:
-        return []
-
-    soup = BeautifulSoup(html_content, 'lxml')
-    prompts = []
-
-    main_content = soup.select_one('main') or soup
-    prompt_elements = main_content.find_all(['div', 'article'], recursive=True)
-
-    for el in prompt_elements:
-        # 查找 prompt 文本
-        prompt_text_el = el.select_one('code') or el.select_one('pre') or el.select_one('[class*="prompt-text"]')
-        if not prompt_text_el:
-            continue
-
-        prompt_text = prompt_text_el.get_text(strip=True)
-        if len(prompt_text) < 10:
-            continue
-
-        # 标题
-        title_el = el.select_one('h3') or el.select_one('h2') or el.select_one('[class*="title"]')
-        title = title_el.get_text(strip=True) if title_el else prompt_text[:50] + '...'
-
-        # 作者
-        author_el = el.select_one('[class*="author"]') or el.select_one('a[href*="/@"]')
-        author = author_el.get_text(strip=True).replace('@', '') if author_el else 'Anonymous'
-
-        # 日期
-        date_el = el.select_one('time') or el.select_one('[class*="date"]')
-        date = date_el.get_text(strip=True) if date_el else ''
-
-        # 描述
-        desc_el = el.select_one('p')
-        description = desc_el.get_text(strip=True) if desc_el else ''
-
-        # 分类
-        category = infer_category(title, description, prompt_text)
-
-        prompts.append({
-            'title': title,
-            'prompt_text': prompt_text,
-            'author': author,
-            'date': date,
-            'description': description,
-            'category': category,
-            'source': 'youmind',
-            'source_url': source_url
-        })
-
-    return prompts
-
-
 def infer_category(title, description, prompt_text):
-    """根据标题/描述推断分类"""
     text = f"{title} {description} {prompt_text}".lower()
-
     if any(k in text for k in ['avatar', 'profile', 'portrait', 'selfie', 'headshot']):
         return 'avatar'
     elif any(k in text for k in ['social media', 'instagram', 'facebook', 'post ', 'feed']):
@@ -129,12 +64,90 @@ def infer_category(title, description, prompt_text):
         return 'avatar'
 
 
-def crawl_youmind():
-    """主采集函数"""
-    results = []
-    sources = load_config()
-    youmind_config = sources.get('youmind', {})
+def parse_youmind_prompts(html_content, source_url):
+    """
+    从 youmind.com Next.js 页面中解析 prompt。
+    Prompts 存储在 __next_f.push 序列化块中，格式为 X.com 推文嵌入数据。
+    """
+    if not html_content:
+        return []
 
+    pattern = r'self\.__next_f\.push\(\[1,"(.*?)"\]\)'
+    matches = re.findall(pattern, html_content, re.DOTALL)
+
+    prompts = []
+    seen = set()
+
+    for raw_m in matches:
+        try:
+            decoded = raw_m.encode().decode('unicode_escape', 'ignore')
+        except Exception:
+            decoded = raw_m
+
+        if '"content"' not in decoded or '"sourceLink"' not in decoded:
+            continue
+
+        # Extract content value: find "content":"VALUE" ending at ","translatedContent"
+        idx = decoded.find('"content":"')
+        if idx == -1:
+            continue
+
+        start = idx + len('"content":"')
+        end_marker = '","translatedContent"'
+        end = decoded.find(end_marker, start)
+        if end == -1:
+            continue
+
+        content = decoded[start:end]
+        if len(content) < 15:
+            continue
+
+        # Extract source URL
+        link_idx = decoded.find('"sourceLink":"')
+        if link_idx != -1:
+            link_start = link_idx + len('"sourceLink":"')
+            link_end = decoded.find('"', link_start)
+            src_url = decoded[link_start:link_end]
+        else:
+            src_url = ''
+
+        # Extract author name
+        author_name = 'Anonymous'
+        author_idx = decoded.find('"author":{"name":"')
+        if author_idx != -1:
+            a_start = author_idx + len('"author":{"name":"')
+            a_end = decoded.find('"', a_start)
+            author_name = decoded[a_start:a_end]
+
+        # Dedupe by content hash
+        h = hashlib.md5(content.encode()).hexdigest()
+        if h in seen:
+            continue
+        seen.add(h)
+
+        title = content[:50].replace('\n', ' ').strip() + '...'
+        category = infer_category(title, '', content)
+
+        prompts.append({
+            'title': title,
+            'prompt_text': content,
+            'author': author_name,
+            'source': 'youmind',
+            'source_url': src_url or source_url,
+            'category': category,
+            'date': ''
+        })
+
+    return prompts
+
+
+def crawl_youmind():
+    results = []
+    config_path = os.path.join(PROJECT_ROOT, 'config', 'sources.json')
+    with open(config_path, 'r', encoding='utf-8') as f:
+        sources = json.load(f)
+
+    youmind_config = sources.get('youmind', {})
     if not youmind_config.get('enabled', True):
         print("[youmind] Disabled in config")
         return results
