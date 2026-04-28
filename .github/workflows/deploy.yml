@@ -28,21 +28,21 @@ jobs:
       - name: Run YouMind crawler
         run: python scripts/crawlers/youmind_crawler.py
 
-      - name: Run Reddit crawler
-        run: python scripts/crawlers/reddit_crawler.py
-
       - name: Dedupe & insert into DB
         run: python scripts/dedupe/dedupe.py
 
       - name: Generate static site
         run: python scripts/publisher/generate_site.py
 
-      - name: Deploy to Cloudflare Pages
-        uses: cloudflare/pages-action@v1
-        with:
-          api-token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          account-id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          project-name: prompt-stash
-          directory: outputs/site
-          git-domain: github.com
-          branch: main
+      - name: Copy site to docs/ for GitHub Pages
+        run: |
+          mkdir -p docs
+          cp -r outputs/site/* docs/
+
+      - name: Commit & push to trigger GitHub Pages
+        run: |
+          git config --local user.email "actions@prompt-stash.ai"
+          git config --local user.name "PromptStash CI"
+          git add docs/
+          git diff --cached --quiet || git commit -m "chore: update site for GitHub Pages"
+          git push
