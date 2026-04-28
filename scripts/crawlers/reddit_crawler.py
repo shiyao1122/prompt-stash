@@ -8,7 +8,22 @@ import time
 import os
 import sys
 
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+import subprocess
+
+_script_abspath = os.path.abspath(__file__) if '__file__' in globals() else os.path.abspath('scripts/crawlers')
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(_script_abspath)))
+
+try:
+    _git_root = subprocess.check_output(
+        ['git', 'rev-parse', '--show-toplevel'],
+        cwd=PROJECT_ROOT,
+        stderr=subprocess.DEVNULL
+    ).decode().strip()
+    if _git_root:
+        PROJECT_ROOT = _git_root
+except Exception:
+    pass
+
 sys.path.insert(0, PROJECT_ROOT)
 
 

@@ -9,8 +9,25 @@ import time
 import os
 import sys
 
-# 项目根目录（scripts/ → prompt-stash/）
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+import subprocess
+
+# 项目根目录（scripts/crawlers/ → project root）
+# 往上走 3 层：crawlers/ → crawlers/../ → scripts/../ → root
+_script_abspath = os.path.abspath(__file__) if '__file__' in globals() else os.path.abspath('scripts/crawlers')
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(_script_abspath)))
+
+# 保险机制：用 git rev-parse 确保拿到真实 repo 根目录
+try:
+    _git_root = subprocess.check_output(
+        ['git', 'rev-parse', '--show-toplevel'],
+        cwd=PROJECT_ROOT,
+        stderr=subprocess.DEVNULL
+    ).decode().strip()
+    if _git_root:
+        PROJECT_ROOT = _git_root
+except Exception:
+    pass
+
 sys.path.insert(0, PROJECT_ROOT)
 
 
