@@ -1,18 +1,23 @@
-name: Deploy to Cloudflare Pages
+name: PromptStash — Auto Crawl & Deploy
 
 on:
+  schedule:
+    # Every 6 hours
+    - cron: '0 */6 * * *'
+  workflow_dispatch:   # Manual trigger
   push:
     branches: [main]
-  workflow_dispatch:
 
 jobs:
-  deploy:
+  crawl-and-deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Python
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -20,15 +25,17 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Run crawlers
-        run: |
-          python scripts/crawlers/youmind_crawler.py
-          python scripts/crawlers/reddit_crawler.py
+      - name: Run YouMind crawler
+        run: python scripts/crawlers/youmind_crawler.py
 
-      - name: Dedupe & generate site
-        run: |
-          python scripts/dedupe/dedupe.py
-          python scripts/publisher/generate_site.py
+      - name: Run Reddit crawler
+        run: python scripts/crawlers/reddit_crawler.py
+
+      - name: Dedupe & insert into DB
+        run: python scripts/dedupe/dedupe.py
+
+      - name: Generate static site
+        run: python scripts/publisher/generate_site.py
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/pages-action@v1
