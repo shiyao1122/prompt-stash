@@ -437,7 +437,8 @@ def generate_page(prompts, categories, config):
             .filter-bar {{ background: rgba(15,15,26,0.92); }}
             .prompt-card {{ background: #1A1A2E; border-color: #2D2D4A; }}
             .card-text-block {{ background: #12121F; border-color: #2D2D4A; }}
-            .card-text {{ color: #A5B4FC; }}
+            .card-text {{ color: #C5CAE9; }}
+            .prompt-title {{ color: #E8EAF6; }}
             .stats-bar {{ background: #1A1A2E; }}
             .stats-bar-inner {{ color: rgba(255,255,255,0.5); }}
             .stat-item strong {{ color: #F3F4F6; }}

@@ -79,27 +79,43 @@ def parse_youmind_prompts(html_content, source_url):
     seen = set()
 
     for raw_m in matches:
+        # Decode the unicode-escaped JS string safely:
+        # bytes → unicode_escape → latin1 → utf-8 (recovers embedded UTF-8)
         try:
-            decoded = raw_m.encode().decode('unicode_escape', 'ignore')
+            decoded = raw_m.encode('utf-8').decode('unicode_escape', 'ignore')
+            decoded = decoded.encode('latin1').decode('utf-8', errors='surrogateescape')
         except Exception:
             decoded = raw_m
 
         if '"content"' not in decoded or '"sourceLink"' not in decoded:
             continue
 
-        # Extract content value: find "content":"VALUE" ending at ","translatedContent"
-        idx = decoded.find('"content":"')
+        # Extract content value: use rfind to grab the LAST "content":" field
+        # (avoids picking up content from nested objects in the same block)
+        idx = decoded.rfind('"content":"')
+        if idx == -1:
+            idx = decoded.find('"content":"')
         if idx == -1:
             continue
 
         start = idx + len('"content":"')
-        end_marker = '","translatedContent"'
-        end = decoded.find(end_marker, start)
-        if end == -1:
+
+        # Find the end: look for ,"sourceLink" or ,"translatedContent"
+        end_match = re.search(r',"(?:sourceLink|translatedContent)"', decoded[start:])
+        if end_match:
+            end = start + end_match.start()
+        else:
+            end = start + 1000  # safety fallback
+
+        content = decoded[start:end].strip()
+
+        # Reject garbage: entries where content is just a price fragment + JSON
+        # e.g.  '$28","media":["https://...' or '"123","media":[...]'
+        if len(content) < 20 or ',"media"' in content[:60]:
             continue
 
-        content = decoded[start:end]
-        if len(content) < 15:
+        # Reject obvious non-prompts that slipped through
+        if re.match(r'^["\']?\$?[\d.]+["\']?\s*$', content):
             continue
 
         # Extract source URL
@@ -111,13 +127,14 @@ def parse_youmind_prompts(html_content, source_url):
         else:
             src_url = ''
 
-        # Extract author name
+        # Extract author name (may contain non-ASCII — keep as-is, display handles it)
         author_name = 'Anonymous'
         author_idx = decoded.find('"author":{"name":"')
         if author_idx != -1:
             a_start = author_idx + len('"author":{"name":"')
             a_end = decoded.find('"', a_start)
-            author_name = decoded[a_start:a_end]
+            if a_end > a_start:
+                author_name = decoded[a_start:a_end][:60]
 
         # Dedupe by content hash
         h = hashlib.md5(content.encode()).hexdigest()
