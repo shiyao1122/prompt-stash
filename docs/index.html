@@ -356,7 +356,7 @@
     <!-- Stats Bar -->
     <div class="stats-bar">
         <div class="stats-bar-inner">
-            <span class="stat-item"><span class="stat-dot"></span><strong id="total-count">0</strong> prompts</span>
+            <span class="stat-item"><span class="stat-dot"></span><strong id="total-count">1</strong> prompts</span>
             <span class="stat-item">Updated <strong>2026-09-25</strong></span>
             <span class="stat-item">Source: <strong>YouMind</strong></span>
         </div>
@@ -364,14 +364,32 @@
 
     <!-- Filter Bar -->
     <div class="filter-bar" id="filter-bar-wrapper">
-        <div class="filter-bar-inner" id="filter-bar"><button class="filter-btn active" data-category="all">All <span class="count">0</span></button></div>
+        <div class="filter-bar-inner" id="filter-bar"><button class="filter-btn active" data-category="all">All <span class="count">1</span></button><button class="filter-btn" data-category="avatar">Avatar <span class="count">1</span></button></div>
     </div>
 
     <!-- Main Content -->
     <main class="main" id="prompts">
         <p class="section-label">All Prompts</p>
         <div class="prompts-grid" id="prompts-grid">
-            <div class="empty-state"><h3>No prompts yet</h3><p>Run the crawler scripts to populate the database.</p></div>
+            
+    <article class="prompt-card" data-category="avatar">
+        <div class="card-header">
+            <span class="card-tag">avatar</span>
+            <span class="card-author">@Johnny Wang</span>
+        </div>
+        <h3 class="card-title">把图1的照片转成一张黑白墨线手绘插画；图2–图5只是风格机制参考（只取「粗黑轮廓线＋实心纯黑块面＋大...</h3>
+        <p class="card-preview">把图1的照片转成一张黑白墨线手绘插画；图2–图5只是风格机制参考（只取「粗黑轮廓线＋实心纯黑块面＋大留白」的画法机制，绝不复刻其中的人物、服装、包、文字或构图）。\n\n画面要求：\n1) 纯黑白双色：只有纯黑与纯白，无灰度、无中间调、无彩...</p>
+        <div class="card-text-block">
+            <code class="card-text">把图1的照片转成一张黑白墨线手绘插画；图2–图5只是风格机制参考（只取「粗黑轮廓线＋实心纯黑块面＋大留白」的画法机制，绝不复刻其中的人物、服装、包、文字或构图）。\n\n画面要求：\n1) 纯黑白双色：只有纯黑与纯白，无灰度、无中间调、无彩色、无渐变、无网点、无阴影过渡。\n2) 粗壮自信的手绘墨线勾勒轮廓，配少量决定性的实心纯黑块面；黑色代表图形重量与剪影，不是阴影或明暗，不是写实光影。\n3) 背景纯白留白：删除原照片的全部背景——天空、云、海面、远山、草地、山坡、照片底部的红色水印文字全部去掉，不留任何环境元素。\n4) 单个人物、全身入画，画成正在行走、迈步的瞬间，居中略偏，四周留出大...</code>
+        </div>
+        <div class="card-footer">
+            <span class="card-date">2026-09-25</span>
+            <a href="" class="btn-copy" target="_blank" rel="noopener">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                Copy
+            </a>
+        </div>
+    </article>
         </div>
     </main>
 
